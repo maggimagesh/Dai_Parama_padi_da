@@ -15,6 +15,8 @@ import {
   X,
 } from "lucide-react";
 
+import { toast } from "sonner";
+
 import { CameraCanvas } from "@/components/attention/camera-canvas";
 import { useAttention } from "@/components/attention/attention-provider";
 import { usePlayback } from "@/components/player/playback-provider";
@@ -45,6 +47,7 @@ export function AmbientPlayer() {
   const shellRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const fadeRef = React.useRef<number | null>(null);
+  const resumeAppliedRef = React.useRef(false);
 
   const { isFullscreen, enter, exit } = useFullscreen(shellRef);
 
@@ -102,6 +105,63 @@ export function AmbientPlayer() {
 
   /* -- start / stop ------------------------------------------------------- */
 
+  /**
+   * A clip the browser cannot decode is a dead end for that clip, not for the
+   * feature: skip to the next one if the library has it, and otherwise close
+   * rather than leaving a black rectangle over the screen.
+   *
+   * Individual `<source>` children fire their own error events as the browser
+   * works down the list, and React surfaces those here too. Those are ordinary
+   * fallback, not failure — only the media element setting `video.error`, once
+   * every candidate is exhausted, means the clip is genuinely unplayable.
+   */
+  const handleDecodeError = React.useCallback(() => {
+    const video = videoRef.current;
+    if (!video?.error) return;
+
+    const { logEvent } = useSessionStore.getState();
+    const label = clip?.name ?? "This clip";
+
+    logEvent({
+      kind: "notice",
+      label: `${label} could not be played`,
+      detail: "No source in this clip is a format this browser can decode.",
+    });
+
+    if (clipCount > 1) {
+      toast.error(`Skipping "${label}"`, {
+        description: "This browser can't decode any of its sources.",
+      });
+      playNext();
+      return;
+    }
+
+    toast.error(`"${label}" can't be played here`, {
+      description:
+        "Add an H.264 MP4 or VP9 WebM encode — see public/videos/README.md.",
+    });
+    dismiss();
+  }, [clip?.name, clipCount, playNext, dismiss]);
+
+  const applyResumePosition = React.useCallback(() => {
+    const video = videoRef.current;
+    if (!video || !clip || resumeAppliedRef.current) return;
+    resumeAppliedRef.current = true;
+
+    if (preferences.resumePolicy !== "resume") {
+      video.currentTime = 0;
+      return;
+    }
+
+    // A clip that ran to its end should start over rather than sit on the
+    // final frame.
+    const saved = resumePositions.get(clip.id) ?? 0;
+    const duration = Number.isFinite(video.duration)
+      ? video.duration
+      : Infinity;
+    video.currentTime = saved > 0 && saved < duration - 0.5 ? saved : 0;
+  }, [clip, preferences.resumePolicy]);
+
   React.useEffect(() => {
     const video = videoRef.current;
     if (!active || !video || !clip) return;
@@ -109,15 +169,11 @@ export function AmbientPlayer() {
     video.muted = muted;
     video.volume = preferences.softFade ? 0 : preferences.volume;
 
-    const saved = resumePositions.get(clip.id) ?? 0;
-    if (preferences.resumePolicy === "resume" && saved > 0) {
-      // A clip that ran to the end should start over rather than sit on its
-      // final frame.
-      video.currentTime =
-        saved < (video.duration || Infinity) - 0.5 ? saved : 0;
-    } else {
-      video.currentTime = 0;
-    }
+    // The seek waits for metadata (see `applyResumePosition`): a clip served
+    // through <source> children has no duration yet at this point, and
+    // assigning currentTime before then is discarded.
+    resumeAppliedRef.current = false;
+    video.load();
 
     void video
       .play()
@@ -252,16 +308,19 @@ export function AmbientPlayer() {
         >
           <motion.video
             ref={videoRef}
-            src={clip.url}
+            // Keyed by clip: browsers only re-evaluate <source> children on a
+            // fresh media element, so swapping clips has to remount this.
+            key={clip.id}
             loop={preferences.loop}
             playsInline
             initial={{ scale: 1.04, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="size-full object-contain"
-            onLoadedMetadata={(event) =>
-              setDuration(event.currentTarget.duration || 0)
-            }
+            onLoadedMetadata={(event) => {
+              setDuration(event.currentTarget.duration || 0);
+              applyResumePosition();
+            }}
             onTimeUpdate={(event) =>
               setProgress(event.currentTarget.currentTime)
             }
@@ -269,8 +328,18 @@ export function AmbientPlayer() {
               resumePositions.delete(clip.id);
               if (!preferences.loop && clipCount > 1) playNext();
             }}
+            onError={handleDecodeError}
             onClick={togglePlay}
-          />
+          >
+            {/* Offered in preference order; the browser takes the first it can decode. */}
+            {clip.sources.map((source) => (
+              <source
+                key={source.url}
+                src={source.url}
+                type={source.mimeType}
+              />
+            ))}
+          </motion.video>
 
           {/* Vignette keeps the chrome readable over bright footage. */}
           <span

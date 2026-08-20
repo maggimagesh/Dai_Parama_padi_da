@@ -39,7 +39,7 @@ export interface Preferences {
 export const DEFAULT_PREFERENCES: Preferences = {
   gazeTriggerEnabled: true,
   idleTriggerEnabled: true,
-  idleTimeoutMs: 60_000,
+  idleTimeoutMs: 180_000,
   fullscreenOnIdle: true,
   fullscreenOnAway: false,
   muted: false,
@@ -106,7 +106,18 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: "peripheral.settings",
-      version: 1,
+      version: 2,
+      migrate: (persisted, version) => {
+        const state = (persisted ?? {}) as Partial<SettingsState>;
+        // v1 shipped a 60s fallback; the timeout is now three minutes.
+        if (version < 2 && state.preferences) {
+          state.preferences = {
+            ...state.preferences,
+            idleTimeoutMs: DEFAULT_PREFERENCES.idleTimeoutMs,
+          };
+        }
+        return state as SettingsState;
+      },
       partialize: ({ attention, preferences, calibration, activeClipId, onboarded }) => ({
         attention,
         preferences,

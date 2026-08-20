@@ -1,0 +1,8 @@
+# Clips are not committed — they are yours, and the repository is not the
+# right place to redistribute footage you did not create.
+#
+# Drop your own files in this folder and they appear in the library
+# automatically; nothing here is tracked except this file and the README.
+*
+!.gitignore
+!README.md

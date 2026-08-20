@@ -26,6 +26,8 @@ function toClip(stored: StoredClip, url: string): Clip {
     id: stored.id,
     name: stored.name,
     source: stored.source,
+    // An upload has exactly one encode: the file the user handed us.
+    sources: [{ url, mimeType: stored.mimeType }],
     url,
     durationSeconds: stored.durationSeconds,
     sizeBytes: stored.sizeBytes,
@@ -62,36 +64,47 @@ export function useMediaLibrary() {
         fetch("/api/bundled-videos")
           .then((response) =>
             response.ok
-              ? (response.json() as Promise<{ clips: BundledClipManifestEntry[] }>)
+              ? (response.json() as Promise<{
+                  clips: BundledClipManifestEntry[];
+                }>)
               : { clips: [] },
           )
           .catch(() => ({ clips: [] as BundledClipManifestEntry[] })),
         listStoredClips().catch(() => [] as StoredClip[]),
       ]);
 
-      const bundledClips: Clip[] = bundled.clips.map((entry) => ({
-        id: `bundled:${entry.file}`,
-        name: entry.name,
-        source: "bundled",
-        url: entry.file,
-        // Duration is filled in lazily by the card once the browser reads it;
-        // blocking the library on metadata for every file would be slower.
-        durationSeconds: 0,
-        sizeBytes: entry.sizeBytes,
-        mimeType: entry.mimeType,
-        addedAt: 0,
-      }));
+      const bundledClips: Clip[] = bundled.clips
+        .filter((entry) => entry.sources.length > 0)
+        .map((entry) => ({
+          id: `bundled:${entry.id}`,
+          name: entry.name,
+          source: "bundled",
+          sources: entry.sources,
+          url: entry.sources[0].url,
+          // Duration is filled in lazily by the card once the browser reads
+          // it; blocking the library on metadata for every file is slower.
+          durationSeconds: 0,
+          sizeBytes: entry.sizeBytes,
+          mimeType: entry.sources[0].mimeType,
+          addedAt: entry.modifiedAt,
+        }));
 
       const uploaded = stored.map((item) =>
         toClip(item, trackUrl(URL.createObjectURL(item.blob))),
       );
 
-      setClips([...uploaded, ...bundledClips]);
+      // One timeline across both sources: the most recently added clip leads,
+      // which is the one the default selection falls back to.
+      setClips(
+        [...uploaded, ...bundledClips].sort((a, b) => b.addedAt - a.addedAt),
+      );
       setLibraryStatus("ready");
     } catch (error) {
       setLibraryStatus(
         "error",
-        error instanceof Error ? error.message : "The library could not be read.",
+        error instanceof Error
+          ? error.message
+          : "The library could not be read.",
       );
     }
   }, [setClips, setLibraryStatus, trackUrl]);
@@ -157,7 +170,9 @@ export function useMediaLibrary() {
         } catch (error) {
           toast.error(`"${file.name}" could not be added`, {
             description:
-              error instanceof Error ? error.message : "Unsupported video file.",
+              error instanceof Error
+                ? error.message
+                : "Unsupported video file.",
           });
         }
       }
@@ -165,7 +180,9 @@ export function useMediaLibrary() {
       setBusy(false);
       if (added > 0) {
         await load();
-        toast.success(`${added} clip${added > 1 ? "s" : ""} added to the library`);
+        toast.success(
+          `${added} clip${added > 1 ? "s" : ""} added to the library`,
+        );
       }
     },
     [load],
@@ -175,7 +192,7 @@ export function useMediaLibrary() {
     async (clip: Clip) => {
       if (clip.source === "bundled") {
         toast.info("Bundled clips live in the repository", {
-          description: `Delete public/videos to remove "${clip.name}".`,
+          description: `Delete it from public/videos to remove "${clip.name}".`,
         });
         return;
       }

@@ -73,8 +73,16 @@ no rebuild required. The filename becomes the display name
 in IndexedDB on your machine and never sent to a server. This is the right path
 for anything large or personal.
 
-A short generated clip (`aurora-drift.webm`) ships with the repo so the app does
-something the moment you open it.
+**Clips are not committed.** `public/videos/` is gitignored apart from its
+README — the repository holds the code, not footage. A fresh clone therefore
+starts with an empty library; add a clip either way above and it works
+immediately.
+
+When several clips are present the most recently added one is the default
+selection, and you can pick a different one in the library at any time. Files
+sharing a basename are grouped into a single entry with multiple sources, so
+`clip.mp4` alongside `clip.webm` is one library item that plays in browsers
+that disagree about codecs.
 
 ## Getting started
 
@@ -149,6 +157,8 @@ re-render the whole page.
 Every number the state machine uses is exposed in the **Tuning** panel and
 persisted. The ones worth reaching for first:
 
+- **Inactivity timeout** — defaults to three minutes before the fullscreen
+  fallback takes over.
 - **Look-away delay** — raise it if glancing at your keyboard triggers playback.
 - **Head tolerance** — widen it for large monitors or close seating.
 - **Look-back delay** — keep it short; it is the responsiveness you feel most.
