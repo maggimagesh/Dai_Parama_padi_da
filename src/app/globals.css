@@ -1,0 +1,220 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ------------------------------------------------------------------------- */
+/*  Peripheral — design tokens                                               */
+/*  A dark, instrument-panel aesthetic: near-black canvas, hairline glass,    */
+/*  and a single "signal" hue that shifts with your attention state.          */
+/* ------------------------------------------------------------------------- */
+
+@theme {
+  --color-canvas: oklch(0.145 0.014 265);
+  --color-canvas-deep: oklch(0.108 0.012 265);
+  --color-surface: oklch(0.195 0.016 265);
+  --color-surface-raised: oklch(0.235 0.018 265);
+
+  --color-ink: oklch(0.975 0.004 265);
+  --color-ink-muted: oklch(0.74 0.018 265);
+  --color-ink-faint: oklch(0.56 0.02 265);
+
+  --color-hairline: oklch(1 0 0 / 9%);
+  --color-hairline-strong: oklch(1 0 0 / 16%);
+
+  --color-signal: oklch(0.78 0.16 195);
+  --color-signal-deep: oklch(0.62 0.19 258);
+  --color-focus: oklch(0.8 0.17 168);
+  --color-drift: oklch(0.83 0.16 82);
+  --color-away: oklch(0.7 0.2 24);
+  --color-idle: oklch(0.72 0.19 305);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --radius-card: 1.25rem;
+
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-drift-slow: drift 22s ease-in-out infinite;
+  --animate-sheen: sheen 2.6s var(--ease-out-quint) infinite;
+  --animate-pulse-ring: pulse-ring 2.4s ease-out infinite;
+  --animate-rise: rise 0.5s var(--ease-out-quint) both;
+}
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(4%, -6%, 0) scale(1.08);
+  }
+  66% {
+    transform: translate3d(-5%, 4%, 0) scale(0.95);
+  }
+}
+
+@keyframes sheen {
+  0% {
+    transform: translateX(-120%);
+  }
+  60%,
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.86);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- base ---------------------------------------------------------------- */
+
+@layer base {
+  * {
+    border-color: var(--color-hairline);
+  }
+
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-canvas-deep);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--color-signal) 40%, transparent);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in oklch, var(--color-signal) 75%, transparent);
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(1 0 0 / 10%);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(1 0 0 / 20%);
+    background-clip: content-box;
+  }
+}
+
+/* --- component utilities ------------------------------------------------- */
+
+@utility glass {
+  background: linear-gradient(
+    160deg,
+    oklch(1 0 0 / 7%) 0%,
+    oklch(1 0 0 / 2.5%) 42%,
+    oklch(1 0 0 / 1%) 100%
+  );
+  border: 1px solid var(--color-hairline);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 7%) inset,
+    0 24px 48px -28px oklch(0 0 0 / 80%);
+}
+
+@utility glass-deep {
+  background: linear-gradient(
+    160deg,
+    oklch(0.22 0.018 265 / 92%) 0%,
+    oklch(0.15 0.014 265 / 94%) 100%
+  );
+  border: 1px solid var(--color-hairline);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 6%) inset,
+    0 32px 64px -32px oklch(0 0 0 / 90%);
+}
+
+/* Hairline highlight along the top edge of a card, like brushed metal. */
+@utility edge-light {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    inset-inline: 12%;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      oklch(1 0 0 / 32%),
+      transparent
+    );
+    pointer-events: none;
+  }
+}
+
+@utility text-balance-pretty {
+  text-wrap: pretty;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Fine film grain — keeps large dark fields from banding. */
+@utility grain {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
