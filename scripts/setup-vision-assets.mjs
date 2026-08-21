@@ -3,8 +3,9 @@
  * entirely from this origin — no third-party CDN, no frames leaving the device.
  *
  * - WASM runtime: copied out of node_modules (always available after install).
- * - Landmark model: fetched once and cached on disk. If the network is
- *   unavailable the app falls back to the public CDN at runtime.
+ * - Landmark model: fetched once and cached on disk. If the download fails the
+ *   install still succeeds, but camera tracking is disabled until it is
+ *   retried — the app does not silently fall back to a third-party CDN.
  *
  * Runs on `postinstall`; safe to re-run.
  */
@@ -67,9 +68,18 @@ async function downloadModel() {
     log("landmark model cached to public/mediapipe/models");
   } catch (error) {
     await rm(MODEL_DEST, { force: true });
+    // Deliberately not fatal: everything except camera tracking still works
+    // without the model, and failing the install would be a poor trade for an
+    // offline machine. But say plainly that tracking is broken until this is
+    // resolved — the app no longer reaches for a CDN on its own.
     log(
-      `could not download the model (${error instanceof Error ? error.message : error}). ` +
-        "The app will load it from the MediaPipe CDN instead.",
+      `WARNING: could not download the model (${error instanceof Error ? error.message : error}).`,
+    );
+    log(
+      "WARNING: camera tracking will NOT work. Re-run `npm install` with " +
+        "network access, or opt into the CDN with ALLOW_VISION_CDN=1 and " +
+        "NEXT_PUBLIC_ALLOW_VISION_CDN=1 (third-party runtime, camera access — " +
+        "see SECURITY.md).",
     );
   }
 }

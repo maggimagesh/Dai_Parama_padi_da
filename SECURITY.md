@@ -60,6 +60,17 @@ check the console for `Refused to…`.
 `script-src` includes `'wasm-unsafe-eval'`, which permits WebAssembly
 compilation only. It does not re-enable `eval()` for JavaScript.
 
+## Deploying
+
+`public/mediapipe/` is generated, not committed — `postinstall` rebuilds it at
+build time. A failed model download does **not** fail the build, so check the
+build log for `WARNING:` lines from `[vision-assets]`. Without the model, and
+without the CDN opt-in, camera tracking is disabled while the rest of the app
+still runs.
+
+`public/videos/` ships empty by design, so a fresh deployment has no clip to
+play until one is added through the app.
+
 ## Testing performed
 
 - **Dependency audit** — `npm audit` and `npm audit --omit=dev`: 0 vulnerabilities.
