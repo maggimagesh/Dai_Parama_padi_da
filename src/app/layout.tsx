@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { Providers } from "@/components/shell/providers";
@@ -49,7 +50,16 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+/**
+ * Reading the nonce opts this route out of static prerendering, which is what
+ * makes the nonce-based CSP in `src/middleware.ts` work at all: a prerendered
+ * document is built once and cannot carry a per-request nonce, so every script
+ * on it would be refused. Next.js stamps the nonce onto its own bootstrap
+ * scripts once the request header is read here.
+ */
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  await headers();
+
   return (
     <html
       lang="en"
