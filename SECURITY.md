@@ -6,10 +6,15 @@ controls that exist, and the findings behind them.
 
 ## Camera data never leaves the machine
 
-The app makes exactly two network requests of its own: `/api/bundled-videos`
-(a directory listing) and a `HEAD` on the local model file. There is no
-telemetry, no analytics, no upload path, and no WebSocket. Frames go from
-`getUserMedia` into a WASM landmarker and are discarded.
+In the default configuration the app makes exactly two network requests of its
+own: `/api/bundled-videos` (a directory listing) and a `HEAD` on the local model
+file. There is no telemetry, no analytics, no upload path, and no WebSocket.
+Frames go from `getUserMedia` into a WASM landmarker and are discarded.
+
+Opting into the CDN fallback below adds requests for the runtime and model to
+third-party origins. Those requests carry no camera data — they fetch assets —
+but they do disclose to that origin that you are running this app, and the code
+they return then executes with access to the stream.
 
 To verify:
 
@@ -28,14 +33,26 @@ fetched from a third party would execute with access to the camera stream.
 Enable it only if you accept that:
 
 ```bash
+# development
 NEXT_PUBLIC_ALLOW_VISION_CDN=1 npm run dev
+
+# production — must be set for the BUILD, not the server
+NEXT_PUBLIC_ALLOW_VISION_CDN=1 npm run build
 ```
+
+**This is a `NEXT_PUBLIC_` variable, so its value is inlined at build time** —
+in the middleware that sets the CSP as much as in the browser bundle. Setting it
+only when starting the server does nothing. Verified by building with it set,
+then running that build without it: the CSP still carried the CDN origins.
 
 One switch drives both sides — the CSP that permits the CDN and the code path
 that uses it — so they cannot drift into a half-state where the policy allows
-what the code refuses. (`ALLOW_VISION_CDN=1` still works as a server-only
-override.) Without it, missing or incomplete assets raise a clear error instead
-of silently reaching out to a third party.
+what the code refuses. An earlier server-only override was removed for exactly
+that reason: being run-time, it widened the policy while the tracker, already
+built against the baked-in value, went on refusing the CDN.
+
+Without the flag, missing or incomplete assets raise a clear error instead of
+silently reaching out to a third party.
 
 The model and the WASM runtime are vendored by separate steps that fail
 independently, so both are probed before the local path is chosen.

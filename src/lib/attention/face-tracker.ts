@@ -14,7 +14,8 @@ import type {
  * with access to the live camera stream, so shipping that as a silent default
  * trades away the privacy guarantee above to paper over a failed install. Set
  * `NEXT_PUBLIC_ALLOW_VISION_CDN=1` to enable it — the middleware reads the same
- * variable to widen the CSP, so the two cannot drift apart.
+ * variable to widen the CSP, so the two cannot drift apart. It is inlined at
+ * build time, so it must be set before `next build`, not at run time.
  */
 
 const LOCAL_WASM_PATH = "/mediapipe/wasm";
@@ -138,8 +139,9 @@ export class FaceTracker {
     if (!useLocal && !CDN_FALLBACK_ENABLED) {
       throw new Error(
         "Vision assets are missing or incomplete in /public/mediapipe. Run " +
-          "`npm install` to vendor them locally, or set " +
-          "NEXT_PUBLIC_ALLOW_VISION_CDN=1 to load them from a CDN.",
+          "`npm install` to vendor them locally, or rebuild with " +
+          "NEXT_PUBLIC_ALLOW_VISION_CDN=1 set to load them from a CDN " +
+          "(build-time only).",
       );
     }
 

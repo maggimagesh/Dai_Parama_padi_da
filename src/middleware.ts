@@ -15,15 +15,18 @@ import { NextResponse, type NextRequest } from "next/server";
  * stream. Set `NEXT_PUBLIC_ALLOW_VISION_CDN=1` to widen the policy for the CDN
  * fallback.
  *
- * That is the same variable the tracker reads. A policy that allowed the CDN
- * while the code refused to use it — or the reverse — would be a confusing
- * half-state, so both sides are driven from one switch. `ALLOW_VISION_CDN` is
- * still honoured for a server-only override.
+ * That is the same variable the tracker reads, so the policy and the code path
+ * cannot disagree. Note it is a `NEXT_PUBLIC_` variable: its value is inlined
+ * at build time, here as much as in the browser bundle, so it has to be set
+ * before `next build` — setting it only at run time does nothing.
+ *
+ * A separate server-only override used to sit alongside this. It was removed:
+ * being run-time, it widened the policy while the tracker — already built
+ * against the baked-in value — went on refusing the CDN. That is the exact
+ * half-state one switch is meant to prevent.
  */
 
-const ALLOW_CDN =
-  process.env.NEXT_PUBLIC_ALLOW_VISION_CDN === "1" ||
-  process.env.ALLOW_VISION_CDN === "1";
+const ALLOW_CDN = process.env.NEXT_PUBLIC_ALLOW_VISION_CDN === "1";
 
 const CDN_ORIGINS = [
   "https://cdn.jsdelivr.net",
