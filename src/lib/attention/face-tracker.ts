@@ -9,8 +9,12 @@ import type {
  *
  * Assets are served from this origin (vendored by `scripts/setup-vision-assets.mjs`)
  * so no video frame — and no request describing one — ever leaves the machine.
- * If the local model is missing, we fall back to the public CDN copy so a fresh
- * clone still works without running the setup script.
+ *
+ * The CDN fallback is opt-in. Runtime fetched from a third party would execute
+ * with access to the live camera stream, so shipping that as a silent default
+ * trades away the privacy guarantee above to paper over a failed install. Set
+ * `NEXT_PUBLIC_ALLOW_VISION_CDN=1` (and `ALLOW_VISION_CDN=1`, which widens the
+ * CSP to match) to enable it.
  */
 
 const LOCAL_WASM_PATH = "/mediapipe/wasm";
@@ -23,8 +27,12 @@ const CDN_MODEL_PATH =
 export interface TrackerCallbacks {
   onResult: (result: FaceLandmarkerResult, timestampMs: number) => void;
   onError: (error: Error) => void;
-  onPhase: (phase: "loading-model" | "requesting-permission" | "running") => void;
+  onPhase: (
+    phase: "loading-model" | "requesting-permission" | "running",
+  ) => void;
 }
+
+const CDN_FALLBACK_ENABLED = process.env.NEXT_PUBLIC_ALLOW_VISION_CDN === "1";
 
 async function localModelAvailable() {
   try {
@@ -103,11 +111,19 @@ export class FaceTracker {
   private async createLandmarker() {
     // Imported lazily: the bundle pulls in a WASM loader that has no business
     // running during SSR or on first paint.
-    const { FaceLandmarker, FilesetResolver } = await import(
-      "@mediapipe/tasks-vision"
-    );
+    const { FaceLandmarker, FilesetResolver } =
+      await import("@mediapipe/tasks-vision");
 
     const useLocal = await localModelAvailable();
+
+    if (!useLocal && !CDN_FALLBACK_ENABLED) {
+      throw new Error(
+        "Vision assets are missing from /public/mediapipe. Run `npm install` " +
+          "to vendor them locally, or set NEXT_PUBLIC_ALLOW_VISION_CDN=1 to " +
+          "load them from a CDN.",
+      );
+    }
+
     const fileset = await FilesetResolver.forVisionTasks(
       useLocal ? LOCAL_WASM_PATH : CDN_WASM_PATH,
     );

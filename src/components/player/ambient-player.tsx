@@ -22,14 +22,19 @@ import { useAttention } from "@/components/attention/attention-provider";
 import { usePlayback } from "@/components/player/playback-provider";
 import { Button } from "@/components/ui/button";
 import { useFullscreen } from "@/hooks/use-fullscreen";
+import {
+  resolveInitialMuted,
+  resolveStartPosition,
+} from "@/lib/media/playback";
 import { STATE_COPY } from "@/lib/attention/types";
 import { useSessionStore } from "@/lib/store/session-store";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import { clamp, cn, formatDuration } from "@/lib/utils";
 
 /**
- * Playback positions survive the player unmounting, so a clip interrupted by
- * looking back picks up where it left off on the next look-away.
+ * Last-known position per clip, surviving the player unmounting. Only consulted
+ * under the opt-in "resume" policy — by default every trigger replays from the
+ * top, so this is recorded but ignored.
  */
 const resumePositions = new Map<string, number>();
 
@@ -148,25 +153,25 @@ export function AmbientPlayer() {
     if (!video || !clip || resumeAppliedRef.current) return;
     resumeAppliedRef.current = true;
 
-    if (preferences.resumePolicy !== "resume") {
-      video.currentTime = 0;
-      return;
-    }
-
-    // A clip that ran to its end should start over rather than sit on the
-    // final frame.
-    const saved = resumePositions.get(clip.id) ?? 0;
-    const duration = Number.isFinite(video.duration)
-      ? video.duration
-      : Infinity;
-    video.currentTime = saved > 0 && saved < duration - 0.5 ? saved : 0;
+    video.currentTime = resolveStartPosition({
+      policy: preferences.resumePolicy,
+      savedSeconds: resumePositions.get(clip.id) ?? 0,
+      durationSeconds: video.duration,
+    });
   }, [clip, preferences.resumePolicy]);
 
   React.useEffect(() => {
     const video = videoRef.current;
     if (!active || !video || !clip) return;
 
-    video.muted = muted;
+    // Every session starts from the preference, never from whatever the last
+    // one degraded to. A single autoplay-blocked start used to leave `muted`
+    // stuck on for the rest of the page's life, so later look-aways played
+    // silently even with "start muted" switched off.
+    const wantsMuted = resolveInitialMuted(preferences.muted);
+    setMuted(wantsMuted);
+    setAutoplayBlocked(false);
+    video.muted = wantsMuted;
     video.volume = preferences.softFade ? 0 : preferences.volume;
 
     // The seek waits for metadata (see `applyResumePosition`): a clip served
@@ -178,18 +183,22 @@ export function AmbientPlayer() {
     void video
       .play()
       .then(() => {
-        setAutoplayBlocked(false);
         setPaused(false);
         rampVolume(preferences.volume, 700);
       })
       .catch(() => {
-        // Browsers block unmuted autoplay without a gesture. Rather than
-        // failing, drop to muted playback and say so.
+        // Browsers block unmuted autoplay without a gesture. Play muted rather
+        // than not at all, and surface the "tap to unmute" affordance.
         video.muted = true;
         setMuted(true);
         void video
           .play()
-          .then(() => setPaused(false))
+          .then(() => {
+            setPaused(false);
+            // Ramp anyway: the volume must be right the instant the user
+            // unmutes, otherwise they unmute into silence.
+            rampVolume(preferences.volume, 700);
+          })
           .catch(() => setPaused(true));
         setAutoplayBlocked(true);
       });

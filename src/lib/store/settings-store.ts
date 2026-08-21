@@ -44,7 +44,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   fullscreenOnAway: false,
   muted: false,
   volume: 0.7,
-  resumePolicy: "resume",
+  resumePolicy: "restart",
   shuffle: false,
   loop: true,
   softFade: true,
@@ -106,7 +106,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: "peripheral.settings",
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
         const state = (persisted ?? {}) as Partial<SettingsState>;
         // v1 shipped a 60s fallback; the timeout is now three minutes.
@@ -116,9 +116,23 @@ export const useSettingsStore = create<SettingsState>()(
             idleTimeoutMs: DEFAULT_PREFERENCES.idleTimeoutMs,
           };
         }
+        // v2 resumed a triggered clip mid-way. Every trigger now replays from
+        // the top, which is what people expect from an ambient player.
+        if (version < 3 && state.preferences) {
+          state.preferences = {
+            ...state.preferences,
+            resumePolicy: DEFAULT_PREFERENCES.resumePolicy,
+          };
+        }
         return state as SettingsState;
       },
-      partialize: ({ attention, preferences, calibration, activeClipId, onboarded }) => ({
+      partialize: ({
+        attention,
+        preferences,
+        calibration,
+        activeClipId,
+        onboarded,
+      }) => ({
         attention,
         preferences,
         calibration,
