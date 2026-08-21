@@ -13,11 +13,13 @@ import type {
  * The CDN fallback is opt-in. Runtime fetched from a third party would execute
  * with access to the live camera stream, so shipping that as a silent default
  * trades away the privacy guarantee above to paper over a failed install. Set
- * `NEXT_PUBLIC_ALLOW_VISION_CDN=1` (and `ALLOW_VISION_CDN=1`, which widens the
- * CSP to match) to enable it.
+ * `NEXT_PUBLIC_ALLOW_VISION_CDN=1` to enable it — the middleware reads the same
+ * variable to widen the CSP, so the two cannot drift apart.
  */
 
 const LOCAL_WASM_PATH = "/mediapipe/wasm";
+/** The loader `FilesetResolver` fetches first — a proxy for the whole runtime. */
+const LOCAL_WASM_PROBE = "/mediapipe/wasm/vision_wasm_internal.js";
 const LOCAL_MODEL_PATH = "/mediapipe/models/face_landmarker.task";
 const CDN_WASM_PATH =
   "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
@@ -34,13 +36,30 @@ export interface TrackerCallbacks {
 
 const CDN_FALLBACK_ENABLED = process.env.NEXT_PUBLIC_ALLOW_VISION_CDN === "1";
 
-async function localModelAvailable() {
+async function resourceExists(path: string) {
   try {
-    const response = await fetch(LOCAL_MODEL_PATH, { method: "HEAD" });
+    const response = await fetch(path, { method: "HEAD" });
     return response.ok;
   } catch {
     return false;
   }
+}
+
+/**
+ * Both halves of the local runtime, checked together.
+ *
+ * The model and the WASM are vendored by separate steps that can fail
+ * independently — the copy comes out of node_modules, the model off the
+ * network. Probing only one and using the answer for both means a half-vendored
+ * install picks local paths for a file that is not there, and MediaPipe fails
+ * with an error that says nothing about the real cause.
+ */
+async function localAssetsAvailable() {
+  const [model, wasm] = await Promise.all([
+    resourceExists(LOCAL_MODEL_PATH),
+    resourceExists(LOCAL_WASM_PROBE),
+  ]);
+  return model && wasm;
 }
 
 export class FaceTracker {
@@ -114,13 +133,13 @@ export class FaceTracker {
     const { FaceLandmarker, FilesetResolver } =
       await import("@mediapipe/tasks-vision");
 
-    const useLocal = await localModelAvailable();
+    const useLocal = await localAssetsAvailable();
 
     if (!useLocal && !CDN_FALLBACK_ENABLED) {
       throw new Error(
-        "Vision assets are missing from /public/mediapipe. Run `npm install` " +
-          "to vendor them locally, or set NEXT_PUBLIC_ALLOW_VISION_CDN=1 to " +
-          "load them from a CDN.",
+        "Vision assets are missing or incomplete in /public/mediapipe. Run " +
+          "`npm install` to vendor them locally, or set " +
+          "NEXT_PUBLIC_ALLOW_VISION_CDN=1 to load them from a CDN.",
       );
     }
 

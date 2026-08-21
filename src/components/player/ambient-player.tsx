@@ -148,6 +148,11 @@ export function AmbientPlayer() {
     dismiss();
   }, [clip?.name, clipCount, playNext, dismiss]);
 
+  /**
+   * Seeks to the session's start position. Deferred to `loadedmetadata` because
+   * a clip loaded through `<source>` children has no duration before then, and
+   * runs once per session — looping re-fires the event, which must not re-seek.
+   */
   const applyResumePosition = React.useCallback(() => {
     const video = videoRef.current;
     if (!video || !clip || resumeAppliedRef.current) return;

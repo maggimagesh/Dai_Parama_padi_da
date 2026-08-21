@@ -12,10 +12,18 @@ import { NextResponse, type NextRequest } from "next/server";
  * The vision runtime is served from this origin (vendored by
  * `scripts/setup-vision-assets.mjs`). Third-party origins are deliberately
  * absent: WASM fetched from a CDN would execute with access to that same camera
- * stream. Set `ALLOW_VISION_CDN=1` to widen the policy for the CDN fallback.
+ * stream. Set `NEXT_PUBLIC_ALLOW_VISION_CDN=1` to widen the policy for the CDN
+ * fallback.
+ *
+ * That is the same variable the tracker reads. A policy that allowed the CDN
+ * while the code refused to use it — or the reverse — would be a confusing
+ * half-state, so both sides are driven from one switch. `ALLOW_VISION_CDN` is
+ * still honoured for a server-only override.
  */
 
-const ALLOW_CDN = process.env.ALLOW_VISION_CDN === "1";
+const ALLOW_CDN =
+  process.env.NEXT_PUBLIC_ALLOW_VISION_CDN === "1" ||
+  process.env.ALLOW_VISION_CDN === "1";
 
 const CDN_ORIGINS = [
   "https://cdn.jsdelivr.net",

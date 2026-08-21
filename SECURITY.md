@@ -28,12 +28,17 @@ fetched from a third party would execute with access to the camera stream.
 Enable it only if you accept that:
 
 ```bash
-ALLOW_VISION_CDN=1 NEXT_PUBLIC_ALLOW_VISION_CDN=1 npm run dev
+NEXT_PUBLIC_ALLOW_VISION_CDN=1 npm run dev
 ```
 
-Both variables are needed — one widens the CSP, the other unlocks the code path.
-Without them a missing model raises a clear error instead of silently reaching
-out to a CDN.
+One switch drives both sides — the CSP that permits the CDN and the code path
+that uses it — so they cannot drift into a half-state where the policy allows
+what the code refuses. (`ALLOW_VISION_CDN=1` still works as a server-only
+override.) Without it, missing or incomplete assets raise a clear error instead
+of silently reaching out to a third party.
+
+The model and the WASM runtime are vendored by separate steps that fail
+independently, so both are probed before the local path is chosen.
 
 ## Headers
 
