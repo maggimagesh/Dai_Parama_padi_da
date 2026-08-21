@@ -77,9 +77,9 @@ async function downloadModel() {
     );
     log(
       "WARNING: camera tracking will NOT work. Re-run `npm install` with " +
-        "network access, or opt into the CDN with ALLOW_VISION_CDN=1 and " +
-        "NEXT_PUBLIC_ALLOW_VISION_CDN=1 (third-party runtime, camera access — " +
-        "see SECURITY.md).",
+        "network access, or rebuild with NEXT_PUBLIC_ALLOW_VISION_CDN=1 to " +
+        "opt into the CDN (build-time only; third-party runtime with camera " +
+        "access — see SECURITY.md).",
     );
   }
 }
