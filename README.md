@@ -187,6 +187,13 @@ camera scene and play a 3 × 3 sliding photo puzzle with eight pieces and one ga
 - Open the camera, allow permission, and capture a detailed scene. Front/back
   camera switching uses the cameras available on the device. Capture uses the
   same centered square crop as the preview and immediately releases the camera.
+- Phone browsers show 1×–3× **Digital zoom**, with a slider, zoom-in/out buttons,
+  and a reset button. Detection reads `navigator.userAgent` with optional mobile
+  client hints; desktop and tablet camera controls retain the unzoomed view.
+  Digital zoom crops the scene (it does not switch physical lenses), so both the
+  preview and captured puzzle use the same centered framing. Zoom resets to 1×
+  on camera close, reopen, or front/back switching. UA detection is a UI hint:
+  a phone requesting a desktop user agent may be identified as a desktop.
 - Select **Shuffle & start** to begin a solvable puzzle and the timer. Tap/click
   a neighboring tile, or focus the board and use arrow keys to move a tile in
   that direction. The solved gap belongs at the bottom right.
