@@ -178,3 +178,30 @@ right thresholds genuinely depend on your desk.
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Radix UI
 primitives · Motion · Zustand · MediaPipe Tasks Vision · Vitest
+
+## Scene puzzle game
+
+Visit `/puzzle-game` (or select **Puzzle game** in the header) to capture a live
+camera scene and play a 3 × 3 sliding photo puzzle with eight pieces and one gap.
+
+- Open the camera, allow permission, and capture a detailed scene. Front/back
+  camera switching uses the cameras available on the device. Capture uses the
+  same centered square crop as the preview and immediately releases the camera.
+- Select **Shuffle & start** to begin a solvable puzzle and the timer. Tap/click
+  a neighboring tile, or focus the board and use arrow keys to move a tile in
+  that direction. The solved gap belongs at the bottom right.
+- The timer below the board stops on the final move; switching tabs does not
+  pause it. The original image and optional tile numbers help with orientation.
+- The ten fastest completed rounds persist in this browser, with gold, silver,
+  and bronze medals followed by ranks 4–10. Tied times use fewer moves first.
+  This is a personal device-local scoreboard, not a shared online leaderboard.
+- Photos remain in memory and are never uploaded or stored with scores. Camera
+  access needs HTTPS (or localhost) and is released on capture, cancellation,
+  navigation, and when the page is hidden. The attention tracker is unmounted
+  on the puzzle route so it cannot compete for the camera.
+
+Validation: `npm test` includes shuffle parity, legal moves, completion timing,
+score ranking, invalid storage recovery, and timer formatting. To manually check
+camera behavior, use a camera-enabled browser over HTTPS, capture a scene,
+complete a puzzle, reload to confirm scores, and test denied permissions,
+camera switching, narrow screens, keyboard controls, and leaving the page.

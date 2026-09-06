@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { motion } from "motion/react";
-import { CircleHelp, Lock, Play } from "lucide-react";
+import { CircleHelp, Lock, Play, Puzzle } from "lucide-react";
 
 import { useAttention } from "@/components/attention/attention-provider";
 import { usePlayback } from "@/components/player/playback-provider";
@@ -43,6 +44,9 @@ export function TopBar() {
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link href="/puzzle-game" aria-label="Puzzle game"><Puzzle /><span className="hidden sm:inline">Puzzle game</span></Link>
+          </Button>
           <motion.div
             layout
             className="flex items-center gap-2 rounded-full border border-hairline bg-white/[0.04] px-3 py-1.5"

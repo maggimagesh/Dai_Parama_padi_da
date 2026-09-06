@@ -1,0 +1,69 @@
+.page { width: min(1120px, 100%); margin: 0 auto; padding: 0 28px 28px; }
+.header { min-height: 78px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--color-hairline); }
+.back, .privacy, .eyebrow, .sectionHeading h2, .statLabel, .success, .footer { display: flex; align-items: center; gap: 8px; }
+.back { font-size: 14px; color: var(--color-ink-muted); text-decoration: none; }
+.back:hover { color: var(--color-ink); }
+.privacy { font-size: 11px; color: var(--color-ink-muted); }
+.intro { padding: 46px 0 38px; }
+.eyebrow { color: var(--color-signal); font-size: 10px; font-weight: 600; letter-spacing: .17em; }
+.intro h1 { font-size: clamp(38px, 5.5vw, 60px); font-weight: 600; line-height: 1.09; letter-spacing: -.055em; margin: 16px 0; }
+.intro h1 span { color: var(--color-ink-muted); }
+.intro p { color: var(--color-ink-muted); font-size: 14px; line-height: 1.8; }
+.layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(280px, 1fr); gap: 32px; align-items: start; }
+.playArea { min-width: 0; }
+.sectionHeading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+.sectionHeading h2 { margin: 0; font-size: 14px; font-weight: 550; letter-spacing: -.02em; }
+.pill { border: 1px solid var(--color-hairline-strong); border-radius: 5px; padding: 5px 7px; color: var(--color-ink-muted); font-size: 8px; letter-spacing: .08em; white-space: nowrap; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-signal); }
+.captureFrame, .board { width: 100%; aspect-ratio: 1; position: relative; overflow: hidden; border-radius: 16px; background: var(--color-surface); border: 1px solid var(--color-hairline-strong); }
+.video { width: 100%; height: 100%; object-fit: cover; }
+.cameraPlaceholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 28px; background: radial-gradient(ellipse at 50% 40%, color-mix(in oklch, var(--color-signal) 8%, var(--color-surface)), var(--color-canvas)); }
+.cameraIcon { width: 82px; height: 82px; border: 1px solid color-mix(in oklch, var(--color-signal) 25%, transparent); border-radius: 24px; display: grid; place-items: center; color: var(--color-signal); margin-bottom: 24px; }
+.cameraPlaceholder h3 { font-size: 20px; letter-spacing: -.04em; }
+.cameraPlaceholder p { max-width: 245px; color: var(--color-ink-muted); font-size: 13px; line-height: 1.8; margin: 10px 0 24px; }
+.closeCamera { position: absolute; top: 12px; right: 12px; background: #10141ccc; }
+.viewfinder { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to right, transparent 33.15%, #ffffff55 33.2%, #ffffff55 33.5%, transparent 33.55%, transparent 66.45%, #ffffff55 66.5%, #ffffff55 66.8%, transparent 66.85%), linear-gradient(to bottom, transparent 33.15%, #ffffff55 33.2%, #ffffff55 33.5%, transparent 33.55%, transparent 66.45%, #ffffff55 66.5%, #ffffff55 66.8%, transparent 66.85%); }
+.tile, .gap { position: absolute; width: calc(100% / 3); height: calc(100% / 3); }
+.tile { background-repeat: no-repeat; border: 2px solid var(--color-canvas-deep); border-radius: 9px; cursor: default; transition: left .16s ease-out, top .16s ease-out, box-shadow .16s; }
+.tile.movable { cursor: pointer; box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--color-signal) 70%, transparent); }
+.tile.movable:hover { box-shadow: inset 0 0 0 4px var(--color-signal); }
+.tileNumber { position: absolute; top: 10px; left: 10px; width: 25px; height: 25px; border-radius: 6px; display: grid; place-items: center; background: #090e17b8; color: white; font-size: 12px; font-family: var(--font-mono); }
+.gap { display: grid; place-items: center; color: var(--color-ink-faint); background: var(--color-canvas-deep); border: 2px solid var(--color-canvas-deep); }
+.gap span { text-align: center; font-size: 28px; font-weight: 200; }
+.gap small { display: block; font-size: 8px; letter-spacing: .15em; margin-top: 4px; }
+.solved { border-color: var(--color-focus); }
+.solved .tile { border: 0; border-radius: 0; }
+.actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.actions:empty { display: none; }
+.timerBoard { display: grid; grid-template-columns: 1.75fr 1fr 1fr; padding: 23px 0; border-top: 1px solid var(--color-hairline); border-bottom: 1px solid var(--color-hairline); margin-top: 24px; }
+.timerBoard > div { padding: 0 18px; border-left: 1px solid var(--color-hairline); }
+.timerBoard > div:first-child { padding-left: 0; border-left: 0; }
+.statLabel { font-size: 9px; color: var(--color-ink-muted); letter-spacing: .1em; white-space: nowrap; }
+.time, .statValue { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: clamp(22px, 3vw, 32px); margin-top: 9px; letter-spacing: -.05em; }
+.time { color: var(--color-signal); }
+.status { font-size: 12px; color: var(--color-ink-muted); margin-top: 18px; min-height: 20px; }
+.success { align-items: flex-start; color: var(--color-focus); line-height: 1.7; }
+.success svg { flex-shrink: 0; margin-top: 1px; }
+.instructions { font-size: 11px; color: var(--color-ink-muted); line-height: 1.9; margin-top: 10px; }
+.sidebar { display: flex; flex-direction: column; gap: 24px; }
+.reference, .scores { padding: 20px; border: 1px solid var(--color-hairline); border-radius: 16px; background: color-mix(in oklch, var(--color-surface) 35%, transparent); }
+.referencePhoto { width: 100%; aspect-ratio: 1; background-size: cover; background-position: center; border-radius: 8px; }
+.referenceEmpty { height: 140px; display: flex; align-items: center; justify-content: center; gap: 16px; border: 1px dashed var(--color-hairline-strong); border-radius: 8px; color: var(--color-ink-muted); font-size: 12px; line-height: 1.8; }
+.numberSetting { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 12px; color: var(--color-ink-muted); margin-top: 18px; }
+.trophy { color: #e3bd71; }
+.scoreSubtitle { color: var(--color-ink-muted); font-size: 11px; margin: -6px 0 16px; }
+.scoreList { list-style: none; padding: 0; margin: 0; }
+.scoreRow { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-top: 1px solid var(--color-hairline); }
+.rank { width: 30px; flex-shrink: 0; text-align: center; font-family: var(--font-mono); font-size: 12px; color: var(--color-ink-muted); }
+.rank0, .rank1, .rank2 { font-size: 24px; }
+.scoreDetails { display: flex; flex-direction: column; gap: 3px; }
+.scoreDetails strong { font-size: 14px; font-weight: 500; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.scoreDetails small { font-size: 10px; color: var(--color-ink-muted); }
+.latest { background: color-mix(in oklch, var(--color-signal) 7%, transparent); border-radius: 6px; }
+.newBadge { margin-left: auto; font-size: 8px; color: var(--color-signal); letter-spacing: .1em; }
+.error, .storageNotice { font-size: 12px; line-height: 1.7; color: #ffc5b5; margin-top: 14px; }
+.footer { justify-content: center; margin-top: 44px; border-top: 1px solid var(--color-hairline); padding-top: 24px; font-size: 10px; line-height: 1.7; color: var(--color-ink-muted); text-align: center; }
+@media (min-width: 761px) { .referencePhoto { width: 160px; margin: auto; } }
+@media (max-width: 760px) { .page { padding: 0 18px 24px; } .header { min-height: 66px; } .privacy { font-size: 9px; } .intro { padding: 32px 0; } .layout { grid-template-columns: minmax(0, 1fr); gap: 28px; } .referencePhoto { max-width: 240px; margin: auto; } .timerBoard > div { padding: 0 12px; } .desktopBreak { display: none; } }
+@media (max-width: 380px) { .privacy { max-width: 125px; } .cameraPlaceholder { padding: 16px; } .cameraIcon { width: 58px; height: 58px; margin-bottom: 14px; } .cameraPlaceholder h3 { font-size: 17px; } .cameraPlaceholder p { margin-bottom: 14px; } .time, .statValue { font-size: 21px; } .sectionHeading h2 { font-size: 12px; } }
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } }
