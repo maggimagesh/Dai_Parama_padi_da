@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, Camera, Check, FlipHorizontal2, ImageIcon, Lock, Puzzle, RotateCcw, Shuffle, Timer, Trophy, X } from "lucide-react";
+import { ArrowLeft, Camera, Check, FlipHorizontal2, ImageIcon, Lock, Minus, Plus, Puzzle, RotateCcw, Shuffle, Timer, Trophy, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { CAMERA_ZOOM_STEP, MAX_CAMERA_ZOOM, MIN_CAMERA_ZOOM, cameraCrop, clampCameraZoom, isPhoneCamera } from "@/lib/puzzle/camera";
 import { advanceRound, bestScores, formatTime, neighbors, readScores, SCORE_KEY, shufflePuzzle, SOLVED, type Round, type Score } from "@/lib/puzzle/game";
 import styles from "./puzzle-game.module.css";
 
@@ -20,6 +22,8 @@ export function PuzzleGame() {
   const [camera, setCamera] = React.useState<"off" | "opening" | "live">("off");
   const [facing, setFacing] = React.useState<"environment" | "user">("environment");
   const [cameraReady, setCameraReady] = React.useState(false);
+  const [phoneCamera, setPhoneCamera] = React.useState(false);
+  const [zoom, setZoom] = React.useState(MIN_CAMERA_ZOOM);
   const [error, setError] = React.useState("");
   const [photo, setPhoto] = React.useState<string | null>(null);
   const [round, setRound] = React.useState<Round>(emptyRound);
@@ -42,7 +46,8 @@ export function PuzzleGame() {
     releaseCamera();
     setCamera("off");
     setCameraReady(false);
-  }, [releaseCamera]);
+    setZoom(MIN_CAMERA_ZOOM);
+  }, [releaseCamera, setZoom]);
 
   React.useEffect(() => {
     // A hidden page should not keep a live camera running. The game clock keeps going.
@@ -80,6 +85,9 @@ export function PuzzleGame() {
     const request = requestRef.current;
     setError("");
     setCameraReady(false);
+    setZoom(MIN_CAMERA_ZOOM);
+    const device = navigator as Navigator & { userAgentData?: { mobile?: boolean } };
+    setPhoneCamera(isPhoneCamera(device.userAgent, device.userAgentData?.mobile));
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
       setCamera("off");
       setError("Live capture needs HTTPS and a browser with camera support. Open this page in Safari, Chrome, or Edge.");
@@ -121,8 +129,8 @@ export function PuzzleGame() {
     canvas.width = canvas.height = 900;
     const context = canvas.getContext("2d");
     if (!context) { setError("Could not capture this scene. Please try again."); return; }
-    const side = Math.min(video.videoWidth, video.videoHeight);
-    context.drawImage(video, (video.videoWidth - side) / 2, (video.videoHeight - side) / 2, side, side, 0, 0, 900, 900);
+    const crop = cameraCrop(video.videoWidth, video.videoHeight, zoom);
+    context.drawImage(video, crop.x, crop.y, crop.side, crop.side, 0, 0, 900, 900);
     setPhoto(canvas.toDataURL("image/jpeg", 0.9));
     stopCamera();
     setError("");
@@ -203,7 +211,7 @@ export function PuzzleGame() {
 
           {!photo ? (
             <div className={styles.captureFrame}>
-              <video ref={videoRef} muted playsInline autoPlay className={styles.video} onLoadedData={() => setCameraReady(true)} aria-label="Live camera preview" />
+              <video ref={videoRef} muted playsInline autoPlay className={styles.video} style={{ transform: `scale(${zoom})` }} onLoadedData={() => setCameraReady(true)} aria-label="Live camera preview" />
               {camera !== "live" && <div className={styles.cameraPlaceholder}>
                 <div className={styles.cameraIcon}><Camera size={34} strokeWidth={1.4} /></div>
                 <h3>{camera === "opening" ? "Opening your camera…" : "Every scene is a new puzzle"}</h3>
@@ -226,6 +234,20 @@ export function PuzzleGame() {
           )}
 
           {error && <p className={styles.error} role="alert">{error}</p>}
+          {!photo && camera === "live" && phoneCamera && (
+            <div className={styles.zoomControls} role="group" aria-label="Camera zoom">
+              <div className={styles.zoomHeading}>
+                <span>Digital zoom</span>
+                <Button variant="ghost" size="sm" aria-label="Reset camera zoom to 1×" onClick={() => setZoom(MIN_CAMERA_ZOOM)}>{zoom.toFixed(1)}× · Reset</Button>
+              </div>
+              <div className={styles.zoomSlider}>
+                <Button className={styles.zoomButton} variant="outline" size="icon" aria-label="Zoom out" disabled={zoom <= MIN_CAMERA_ZOOM} onClick={() => setZoom((value) => clampCameraZoom(value - CAMERA_ZOOM_STEP))}><Minus /></Button>
+                <Slider aria-label="Camera zoom multiplier" min={MIN_CAMERA_ZOOM} max={MAX_CAMERA_ZOOM} step={CAMERA_ZOOM_STEP} value={[zoom]} onValueChange={([value]) => setZoom(clampCameraZoom(value ?? MIN_CAMERA_ZOOM))} />
+                <Button className={styles.zoomButton} variant="outline" size="icon" aria-label="Zoom in" disabled={zoom >= MAX_CAMERA_ZOOM} onClick={() => setZoom((value) => clampCameraZoom(value + CAMERA_ZOOM_STEP))}><Plus /></Button>
+              </div>
+              <p>1×–3× · Your photo matches this preview.</p>
+            </div>
+          )}
           <div className={styles.actions}>
             {!photo && camera === "live" && <><Button variant="signal" size="lg" disabled={!cameraReady} onClick={capture}><Camera /> Capture scene</Button><Button aria-label="Switch front and back camera" onClick={() => void openCamera(facing === "user" ? "environment" : "user")}><FlipHorizontal2 /> Flip</Button></>}
             {photo && !playing && <Button variant="signal" size="lg" onClick={startRound}>{solved ? <RotateCcw /> : <Shuffle />}{solved ? "Play again" : "Shuffle & start"}</Button>}
